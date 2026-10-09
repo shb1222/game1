@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>بپر بپرو</title>
+  <style>
+    body {
+      font-family: Tahoma, Arial, sans-serif;
+      background: #f0f4f8;
+      text-align: center;
+      padding: 20px 8px;
+    }
+    canvas {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+    }
+    p { color: #4a5568; }
+  </style>
+</head>
+<body>
+  <h1>احمد گوزو بپر</h1>
+  <canvas id="game" width="600" height="250"></canvas>
+  <p>پرش: کلید Space یا کلیک / لمس صفحه</p>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const groundY = 200;
+
+    let player, obstacles, score, speed, gameOver, nextGap;
+
+    function reset() {
+      player = { x: 50, y: groundY - 40, w: 40, h: 40, vy: 0, onGround: true };
+      obstacles = [];
+      score = 0;
+      speed = 5;
+      nextGap = 400;
+      gameOver = false;
+    }
+
+    function jump() {
+      if (gameOver) {
+        reset();
+        return;
+      }
+      if (player.onGround) {
+        player.vy = -13;
+        player.onGround = false;
+      }
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.code === "Space" || e.code === "ArrowUp") {
+        e.preventDefault();
+        jump();
+      }
+    });
+    canvas.addEventListener("pointerdown", jump);
+
+    function update() {
+      if (gameOver) return;
+
+      score++;
+      speed = Math.min(5 + score / 600, 9);
+
+      // گرانش
+      player.vy += 0.7;
+      player.y += player.vy;
+      if (player.y >= groundY - player.h) {
+        player.y = groundY - player.h;
+        player.vy = 0;
+        player.onGround = true;
+      }
+
+      // ساخت مانع جدید
+      let last = obstacles[obstacles.length - 1];
+      if (!last || last.x < canvas.width - nextGap) {
+        obstacles.push({
+          x: canvas.width,
+          w: 20 + Math.random() * 15,
+          h: 30 + Math.random() * 30
+        });
+        nextGap = 320 + Math.random() * 200;
+      }
+
+      // حرکت موانع و برخورد
+      for (let o of obstacles) {
+        o.x -= speed;
+        if (
+          player.x + player.w - 4 > o.x &&
+          player.x + 4 < o.x + o.w &&
+          player.y + player.h - 4 > groundY - o.h
+        ) {
+          gameOver = true;
+        }
+      }
+      obstacles = obstacles.filter(function (o) {
+        return o.x + o.w > 0;
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // زمین
+      ctx.fillStyle = "#cbd5e0";
+      ctx.fillRect(0, groundY, canvas.width, 3);
+
+      // بازیکن
+      ctx.fillStyle = "#3182ce";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      // موانع
+      ctx.fillStyle = "#e53e3e";
+      for (let o of obstacles) {
+        ctx.fillRect(o.x, groundY - o.h, o.w, o.h);
+      }
+
+      // امتیاز
+      ctx.fillStyle = "#2d3748";
+      ctx.font = "20px Tahoma";
+      ctx.textAlign = "left";
+      ctx.fillText("امتیاز: " + Math.floor(score / 10), 15, 30);
+
+      if (gameOver) {
+        ctx.textAlign = "center";
+        ctx.font = "32px Tahoma";
+        ctx.fillText("احمد ریدی😂", canvas.width / 2, 110);
+        ctx.font = "18px Tahoma";
+        ctx.fillText("برای شروع دوباره Space بزن", canvas.width / 2, 145);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    reset();
+    loop();
+  </script>
+</body>
+</html>
